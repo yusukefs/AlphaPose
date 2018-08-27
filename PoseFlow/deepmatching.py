@@ -15,12 +15,12 @@ Copyright 2018 - 2018 Shanghai Jiao Tong University, Machine Vision and Intellig
 import os
 from tqdm import tqdm
 os.chdir("deepmatching")
-image_dir = "/posetrack_data/images"
+image_dir = "../posetrack_data/images"
 imgnames = []
 vidnames = []
 
 for a,b,c in os.walk(image_dir):
-    if len(a.split("/")) == 9:
+    if len(a.split("/")) == 5:
         vidnames.append(a)
 
 for vidname in tqdm(sorted(vidnames)):
