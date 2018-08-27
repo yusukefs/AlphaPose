@@ -12,5 +12,8 @@ PoseFlow/val-predict
 *.pyc
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+*.o
 
 @eaDir
+*.swp
+
