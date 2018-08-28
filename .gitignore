@@ -22,3 +22,6 @@ ssd/examples
 *.weights
 
 coco-minival/
+
+.DS_Store
+@eaDir
