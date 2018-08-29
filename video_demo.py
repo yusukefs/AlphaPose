@@ -77,7 +77,23 @@ if __name__ == "__main__":
             inps, pt1, pt2 = crop_from_dets(inp, boxes)
             inps = Variable(inps.cuda())
 
-            hm = pose_model(inps)
+            # For avoiding CUDA memory error
+            # Reference:
+            # - [CUDA error: out of memory (PyTorch) #94](https://github.com/MVIG-SJTU/AlphaPose/issues/94#issuecomment-416815534)
+            batchSize = 10
+            datalen = inps.size(0)
+            leftover = 0
+            if (datalen) % batchSize:
+                leftover = 1
+            num_batches = datalen // batchSize + leftover
+            hm = []
+            for j in range(num_batches):
+                inps_j = Variable(inps[j*batchSize:min((j +  1)*batchSize, datalen)].cuda())
+                hm_j = pose_model(inps_j)
+                hm.append(hm_j)
+            hm = torch.cat(hm)
+
+            # hm = pose_model(inps)
             ckpt_time, pose_time = getTime(ckpt_time)
             runtime_profile['pt'].append(pose_time)
 
