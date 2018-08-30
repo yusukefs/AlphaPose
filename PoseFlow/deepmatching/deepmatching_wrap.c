@@ -2980,7 +2980,7 @@ static swig_module_info swig_module = {swig_types, 2, 0, 0, 0, 0};
 
     #define SWIG_FILE_WITH_INIT
 
-    #include <numpy/arrayobject.h>
+    #include </usr/local/lib/python2.7/dist-packages/numpy/core/include/numpy/arrayobject.h>
 
     
     #define CHECK_NUMPY_ARRAY(a, expected_npy)                                 \
