@@ -73,7 +73,6 @@ if __name__ == "__main__":
             if boxes is None or boxes.nelement() == 0:
                 writer.save(None, None, None, None, None, orig_img, im_name.split('/')[-1])
                 continue
-            print("test loader:", test_loader.len())
             ckpt_time, det_time = getTime(start_time)
             runtime_profile['dt'].append(det_time)
             # Pose Estimation
@@ -85,7 +84,6 @@ if __name__ == "__main__":
             runtime_profile['pt'].append(pose_time)
 
             writer.save(boxes, scores, hm, pt1, pt2, orig_img, im_name.split('/')[-1])
-            print("writer:" , writer.len())
             ckpt_time, post_time = getTime(ckpt_time)
             runtime_profile['pn'].append(post_time)
 
