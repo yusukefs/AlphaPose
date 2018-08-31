@@ -66,6 +66,10 @@ def load_pose_data(json_filename, video_dir):
             track[image_id][number_of_boxes + 1]['box_pose_pos'] = np.array(single_pose_data['keypoints']).reshape(-1,3)[:,0:2]
             track[image_id][number_of_boxes + 1]['box_pose_score'] = np.array(single_pose_data['keypoints']).reshape(-1,3)[:,-1]
 
+        # Get number of boxes of each frame and creat a field for that data
+        for image_id in track.keys():
+            track[image_id]['num_boxes'] = len(track[image_id])
+
     print('---> Done.')
     return track
 
@@ -102,12 +106,12 @@ def main():
 
         # Initialize tracking info of the first frame
         if idx == 0:
-            for pid in range(1, len(track[frame_name]) + 1):
+            for pid in range(1, track[frame_name]['num_boxes'] + 1):
                     track[frame_name][pid]['new_pid'] = pid
                     track[frame_name][pid]['match_score'] = 0
 
         # Update maximum number
-        max_pid_id = max(max_pid_id, len(track[frame_name]))
+        max_pid_id = max(max_pid_id, track[frame_name]['num_boxes'])
 
         # Read or generate deepmatching result
         all_cors = read_or_generate_deepmatching_result(frame_id, next_frame_id, args.video_dir)
