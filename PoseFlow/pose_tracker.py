@@ -63,8 +63,8 @@ def load_pose_data(json_filename, video_dir):
             track[image_id][number_of_boxes + 1] = {}
             track[image_id][number_of_boxes + 1]['box_score'] = single_pose_data['score']
             track[image_id][number_of_boxes + 1]['box_pos'] = get_box(single_pose_data['keypoints'], '{}/frames/{}'.format(video_dir, image_id))
-            track[image_id][number_of_boxes + 1]['box_pose_pos'] = np.array(single_pose_data['keypoints']).reshape(-1,3)[:,0:2]
-            track[image_id][number_of_boxes + 1]['box_pose_score'] = np.array(single_pose_data['keypoints']).reshape(-1,3)[:,-1]
+            track[image_id][number_of_boxes + 1]['box_pose_pos'] = np.array(single_pose_data['keypoints']).reshape(-1,3)[:,0:2].tolist()
+            track[image_id][number_of_boxes + 1]['box_pose_score'] = np.array(single_pose_data['keypoints']).reshape(-1,3)[:,-1].tolist()
 
         # Get number of boxes of each frame and creat a field for that data
         for image_id in track.keys():
@@ -149,6 +149,13 @@ def main():
                 track[next_frame_name][next_pid]['match_score'] = 0
 
     print('---> Done.')
+
+    # Save result to json file
+    output_filepath = '{}/poseflow_result.json'.format(args.video_dir)
+    with open(output_filepath, 'w') as fp:
+        json.dump(track, fp, indent=2, sort_keys=True)
+        print('Saved result json to: {}'.format(output_filepath))
+
 
 
 if __name__ == '__main__':
