@@ -88,7 +88,7 @@ def main():
     track = load_pose_data(args.pose_data_path, args.video_dir)
     # Sort frame list of serial numbers
     frame_list = sort_serial_number_filenames(track.keys())
-    # Initialize maximum number of poses in a frame (not sure!!)
+    # Initialize maximum number of people tracked through the video (I think and not very sure!!)
     max_pid_id = 0
     # Initialize weights
     weights = [1,0,1,0,0,0] 
@@ -133,7 +133,20 @@ def main():
             args.num, 
             args.mag
         )
-        print(match_indexes, match_scores)
+
+        # Add match result when match_score > threshold
+        for pid1, pid2 in match_indexes:
+            if match_scores[pid1][pid2] > args.match:
+                track[next_frame_name][pid2 + 1]['new_pid'] = cur_all_pids[pid1]['new_pid']
+                max_pid_id = max(max_pid_id, track[next_frame_name][pid2 + 1]['new_pid'])
+                track[next_frame_name][pid2 + 1]['match_score'] = match_scores[pid1][pid2]
+
+        # Add the untracked new person
+        for next_pid in range(1, track[next_frame_name]['num_boxes'] + 1):
+            if 'new_pid' not in track[next_frame_name][next_pid]:
+                max_pid_id += 1
+                track[next_frame_name][next_pid]['new_pid'] = max_pid_id
+                track[next_frame_name][next_pid]['match_score'] = 0
 
     print('---> Done.')
 
