@@ -2,7 +2,41 @@ from argparse import ArgumentParser
 import json
 from tqdm import tqdm
 import numpy as np
+import re
+import os.path
+import subprocess
+import traceback
 from utils import get_box
+
+
+def sort_serial_number_filenames(list_to_sort):
+    '''Sort filenames that are serial numbers.'''
+    match_list = [(re.search("[0-9]+", x).group(), x) for x in list_to_sort]
+    match_list.sort(cmp = lambda x, y: cmp(int(x[0]), int(y[0])))
+    
+    return [x[1] for x in match_list]
+
+
+def read_or_generate_deepmatching_result(frame_id_1, frame_id_2, video_dir, deepmatching_exec_path='./deepmatching/deepmatching'):
+    cor_filepath = '{}/deepmatching_result/{}_{}.txt'.format(video_dir, frame_id_1, frame_id_2)
+
+    # Just read cor_filepath if it exists
+    if os.path.exists(cor_filepath):
+        return np.loadtxt(cor_filepath)
+    # Generate pair-matching txt if not exists
+    else:
+        img1_path = '{}/frames/{}.jpg'.format(video_dir, frame_id_1)
+        img2_path = '{}/frames/{}.jpg'.format(video_dir, frame_id_2)
+
+        # Execute deepmatching
+        cmd = '{} {} {} -nt 20 -downscale 2 -out {}'.format(deepmatching_exec_path, img1_path, img2_path, cor_filepath)
+        try:
+            subprocess.call([cmd], shell=True)
+        except OSError:
+            print('Failed on executing deepmatching with command: {}'.format(cmd))
+            traceback.print_exc()
+        finally:
+            return np.loadtxt(cor_filepath)
 
 
 def load_pose_data(json_filename, video_dir):
@@ -39,7 +73,35 @@ def main():
     parser.add_argument('--pose_data_path', type=str)
     args = parser.parse_args()
 
-    load_pose_data(args.pose_data_path, args.video_dir)
+    # Load pose data and initialize tracking data
+    track = load_pose_data(args.pose_data_path, args.video_dir)
+    # Sort frame list of serial numbers
+    frame_list = sort_serial_number_filenames(track.keys())
+    # Initialize maximum number of poses in a frame (not sure!!)
+    max_pid_id = 0
+
+    # For all frames
+    print('Tracking pose data...')
+    for idx, frame_name in enumerate(tqdm(frame_list[:-1])): # Loop until the second last frame
+        # Get current frame id
+        frame_id = frame_name.split(".")[0]
+
+        # Get next frame id and name
+        next_frame_name = frame_list[idx+1]
+        next_frame_id = next_frame_name.split(".")[0]
+
+        # Initialize tracking info of the first frame
+        if idx == 0:
+            for pid in range(1, len(track[frame_name]) + 1):
+                    track[frame_name][pid]['new_pid'] = pid
+                    track[frame_name][pid]['match_score'] = 0
+
+        # Update maximum number
+        max_pid_id = max(max_pid_id, len(track[frame_name]))
+
+        # Read or generate deepmatching result
+        all_cors = read_or_generate_deepmatching_result(frame_id, next_frame_id, args.video_dir)
+    print('---> Done.')
 
 
 if __name__ == '__main__':
