@@ -6,7 +6,10 @@ import re
 import os.path
 import subprocess
 import traceback
+from copy import deepcopy
 from utils import get_box
+from utils import stack_all_pids
+from utils import best_matching_hungarian
 
 
 def sort_serial_number_filenames(list_to_sort):
@@ -71,6 +74,10 @@ def main():
     parser = ArgumentParser(description='FoseFlow Tracker')
     parser.add_argument('--video_dir', type=str)
     parser.add_argument('--pose_data_path', type=str)
+    parser.add_argument('--link', type=int, default=100, help='look-ahead LINK_LEN frames to find tracked human bbox')
+    parser.add_argument('--num', type=int, default=7, help='pick high-score(top NUM) keypoints when computing pose_IOU (?)')
+    parser.add_argument('--mag', type=int, default=30, help='box width/height around keypoint for computing pose IoU (?)')
+    parser.add_argument('--match', type=float, default=0.2, help='match threshold in Hungarian Matching')
     args = parser.parse_args()
 
     # Load pose data and initialize tracking data
@@ -79,6 +86,9 @@ def main():
     frame_list = sort_serial_number_filenames(track.keys())
     # Initialize maximum number of poses in a frame (not sure!!)
     max_pid_id = 0
+    # Initialize weights
+    weights = [1,0,1,0,0,0] 
+    weights_fff = [0,1,0,1,0,0]
 
     # For all frames
     print('Tracking pose data...')
@@ -101,6 +111,26 @@ def main():
 
         # Read or generate deepmatching result
         all_cors = read_or_generate_deepmatching_result(frame_id, next_frame_id, args.video_dir)
+
+        # if there is no people in this frame, then copy the info from former frame
+        if len(track[next_frame_name]) == 0:
+            track[next_frame_name] = deepcopy(track[frame_name])
+            continue
+
+        # Get matches with hungarian
+        cur_all_pids, cur_all_pids_fff = stack_all_pids(track, frame_list[:-1], idx, max_pid_id, args.link)
+        match_indexes, match_scores = best_matching_hungarian(
+            all_cors, 
+            cur_all_pids, 
+            cur_all_pids_fff, 
+            track[next_frame_name], 
+            weights, 
+            weights_fff, 
+            args.num, 
+            args.mag
+        )
+        print(match_indexes, match_scores)
+
     print('---> Done.')
 
 
